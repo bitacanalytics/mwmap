@@ -1,0 +1,12 @@
+^mwmap\.Rproj$
+^\.Rproj\.user$
+^data-raw$
+^temp_dataCode\.R$
+^\.github$
+^_pkgdown\.yml$
+^pkgdown$
+^README\.Rmd$
+^NEWS\.md$
+^cran-comments\.md$
+^\.lintr$
+^codecov\.yml$

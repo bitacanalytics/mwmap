@@ -1,0 +1,37 @@
+Package: mwmap
+Title: Create Maps of Malawi Administrative Boundaries
+Version: 0.1.0
+Authors@R: 
+    person("Chifundo", "Bita", , "bitac.analytics@gmail.com", role = c("aut", "cre"))
+Description: Provides tools for creating publication-ready maps of Malawi at
+    multiple administrative levels (country, region, district, and traditional
+    authority). Includes spatial boundary data, choropleth mapping, district
+    highlighting, point plotting, and a collection of Malawi-themed colour
+    palettes suitable for health, agriculture, and socioeconomic visualizations.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 3.5)
+Imports:
+    dplyr,
+    ggplot2,
+    grid,
+    grDevices,
+    rlang,
+    sf,
+    tools,
+    utils
+Suggests:
+    ggrepel,
+    ggspatial,
+    lifecycle,
+    plotly,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+LazyData: true
+LazyDataCompression: xz
+URL: https://github.com/bitacanalytics/mwmap
+BugReports: https://github.com/yourusername/mwmap/issues

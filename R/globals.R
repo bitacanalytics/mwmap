@@ -1,0 +1,27 @@
+# Global variables to avoid R CMD check notes
+utils::globalVariables(
+  c(
+    ".data",
+    "malawi_data",
+    "mw_level_0",
+    "mw_level_1",
+    "mw_level_2",
+    "mw_level_3",
+    "major_lakes",
+    "ADM2_EN",
+    "ADM1_EN",
+    "REGION",
+    "DISTRICT",
+    ".",
+    "name",
+    "district",
+    "region",
+    "lon",
+    "lat",
+    "cases",
+    "population",
+    "geometry",
+    "Shape_Leng",
+    "Shape_Area"
+  )
+)
