@@ -1,7 +1,7 @@
 Package: mwmap
 Title: Create Maps of Malawi Administrative Boundaries
 Version: 0.1.0
-Authors@R: 
+Authors@R:
     person("Chifundo", "Bita", , "bitac.analytics@gmail.com", role = c("aut", "cre"))
 Description: Provides tools for creating publication-ready maps of Malawi at
     multiple administrative levels (country, region, district, and traditional
@@ -34,4 +34,4 @@ Suggests:
 LazyData: true
 LazyDataCompression: xz
 URL: https://github.com/bitacanalytics/mwmap
-BugReports: https://github.com/yourusername/mwmap/issues
+BugReports: https://github.com/bitacanalytics/mwmap/issues

@@ -14,7 +14,7 @@ Development version:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("yourusername/mwmap")
+remotes::install_github("bitacanalytics/mwmap")
 ```
 
 ## Quick start
