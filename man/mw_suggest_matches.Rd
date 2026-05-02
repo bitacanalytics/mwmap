@@ -2,26 +2,23 @@
 % Please edit documentation in R/mw_join.R
 \name{mw_suggest_matches}
 \alias{mw_suggest_matches}
-\title{Suggest Close Matches for Unmatched District Names}
+\title{Suggest Close Malawi Name Matches}
 \usage{
 mw_suggest_matches(x, candidates, n = 3)
 }
 \arguments{
-\item{x}{Character. An unmatched district name.}
+\item{x}{Character. Name to match.}
 
-\item{candidates}{Character vector of valid district names to search.}
+\item{candidates}{Character vector of valid names.}
 
-\item{n}{Integer. Number of suggestions to return. Default: 3.}
+\item{n}{Number of suggestions.}
 }
 \value{
-A character vector of up to \code{n} suggested matches.
+Character vector of suggested names.
 }
 \description{
-Returns the closest matching district names from a candidate list, using
-edit-distance (Levenshtein) to handle typos and minor spelling differences.
-Called automatically by \code{\link{mw_join}} when unmatched districts are found.
+Suggest Close Malawi Name Matches
 }
 \examples{
 mw_suggest_matches("Lilongwee", mw_districts())
-
 }

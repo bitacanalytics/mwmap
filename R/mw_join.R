@@ -1,245 +1,225 @@
-#' Join User Data to Malawi Map Geometry
+#' Join Data to Malawi Boundaries
 #'
-#' Merges user-provided district-level data with Malawi spatial data frames.
-#' Handles name matching, case normalization, and provides detailed feedback
-#' on matching success.
+#' Join a regular data frame to Malawi administrative boundary geometries. The
+#' function is level-aware, so the default join key changes automatically for
+#' country, region, district, and Traditional Authority maps.
 #'
-#' @param data Data frame containing district-level data to join.
-#' @param district_col Character. Name of the column in `data` containing
-#'   district names. Default: "district".
-#' @param map sf object. The map data to join with. Default: mw_level_2.
-#' @param by Character. Optional custom join column(s). If NULL, automatically
-#'   matches based on district names. Default: NULL.
-#' @param name_clean Function. Function to clean/standardize district names.
-#'   Default: [mw_clean_names()] (converts to title case, trims spaces).
-#' @param map_district_col Character. Column name in map containing district
-#'   names. Default: "ADM2_EN" (for level 2).
-#' @param keep_all Logical. Keep all map rows (left join) or only matched rows
-#'   (inner join)? Default: TRUE (left join).
-#' @param verbose Logical. Print detailed matching report. Default: TRUE.
-#' @param quiet Logical. Suppress all messages. Overrides verbose. Default: FALSE.
-#' @param ... Additional arguments passed to [merge()] or [dplyr::left_join()].
+#' @param data A data frame containing values to map.
+#' @param unit_col Column in `data` containing the administrative unit names.
+#'   May be quoted or unquoted. Defaults to `country`, `region`, `district`, or
+#'   `ta` depending on `level`.
+#' @param level Administrative level: `0`/`"country"`, `1`/`"region"`,
+#'   `2`/`"district"`, or `3`/`"ta"`.
+#' @param map Optional sf object to join to. Defaults to the corresponding
+#'   object from \pkg{mwmapdata}.
+#' @param map_col Column in `map` containing administrative unit names. Defaults
+#'   to the correct ADM column for `level`.
+#' @param keep_all If `TRUE`, keep all map features and attach matching values.
+#'   If `FALSE`, keep only matched features.
+#' @param unmatched One of `"message"`, `"warning"`, `"error"`, or `"ignore"`.
+#'   Controls how unmatched input names are reported.
+#' @param quiet Suppress matching messages.
+#' @param district_col Deprecated alias for `unit_col`.
+#' @param name_clean Deprecated. Name matching now uses mwmap's internal
+#'   normalisation.
+#' @param by Optional explicit join specification passed to dplyr joins.
+#' @param verbose Deprecated alias for `!quiet`.
+#' @param ... Passed to dplyr joins.
 #'
-#' @return An sf object with the map geometry and joined data attributes.
-#'
+#' @return An sf object with user columns joined to Malawi geometries.
 #' @examples
 #' \donttest{
-#' # Basic join
-#' df <- data.frame(
-#'   district = c("Lilongwe", "Blantyre", "Mzimba"),
-#'   cases = c(120, 200, 85)
+#' district_data <- data.frame(
+#'   district = c("Lilongwe", "Blantyre", "Mzuzu"),
+#'   cases = c(120, 80, 35)
 #' )
-#' 
-#' joined <- mw_join(df)
-#' 
-#' # Join with custom district column
-#' df2 <- data.frame(
-#'   District_Name = c("Lilongwe", "Blantyre"),
-#'   population = c(2300000, 1800000)
-#' )
-#' 
-#' joined2 <- mw_join(df2, district_col = "District_Name")
-#' 
-#' # Join with Traditional Authorities level
-#' ta_data <- data.frame(
-#'   ta = c("Chitipa", "Mwaulambia", "Mabuka"),
-#'   value = c(45, 67, 89)
-#' )
-#' 
-#' joined3 <- mw_join(ta_data, 
-#'                    district_col = "ta", 
-#'                    map = mw_level_3,
-#'                    map_district_col = "ADM3_EN")
-#' 
-#' # Get matching report without creating object
-#' mw_join(df, verbose = TRUE)
-#' }
+#' mw_join(district_data)
 #'
+#' ta_data <- data.frame(
+#'   ta = c("Mabuka", "Mwaulambia"),
+#'   coverage = c(72, 64)
+#' )
+#' mw_join(ta_data, level = "ta")
+#' }
 #' @importFrom dplyr left_join inner_join
-#' @importFrom stats setNames
+#' @importFrom rlang ensym as_string
 #' @importFrom sf st_as_sf st_geometry
+#' @importFrom stats setNames
 #' @export
 mw_join <- function(
   data,
-  district_col = "district",
-  map = mw_level_2,
-  by = NULL,
-  name_clean = mw_clean_names,
-  map_district_col = "ADM2_EN",
+  unit_col,
+  level = 2,
+  map = NULL,
+  map_col = NULL,
   keep_all = TRUE,
-  verbose = TRUE,
+  unmatched = c("message", "warning", "error", "ignore"),
   quiet = FALSE,
+  district_col = NULL,
+  name_clean = NULL,
+  by = NULL,
+  verbose = NULL,
   ...
 ) {
-  
-  # Input validation
   if (missing(data)) {
-    stop("Argument 'data' is required")
+    stop("`data` is required.", call. = FALSE)
   }
-  
   if (!is.data.frame(data)) {
-    stop("'data' must be a data frame")
+    stop("`data` must be a data frame.", call. = FALSE)
   }
-  
-  if (!district_col %in% names(data)) {
-    stop("Column '", district_col, "' not found in data. ",
-         "Available columns: ", paste(names(data), collapse = ", "))
+
+  level <- mw_level_key(level)
+  map <- map %||% mw_map_data(level)
+  map_col <- map_col %||% mw_name_column(level)
+  unmatched <- match.arg(unmatched)
+
+  if (!is.null(verbose)) {
+    quiet <- !isTRUE(verbose)
   }
-  
-  if (!map_district_col %in% names(map)) {
-    stop("Column '", map_district_col, "' not found in map data. ",
-         "Available columns: ", paste(names(map), collapse = ", "))
+
+  if (!is.null(district_col) && missing(unit_col)) {
+    unit_col <- district_col
   }
-  
-  # Quiet mode overrides verbose
-  if (quiet) verbose <- FALSE
-  
-  # Make a copy to avoid modifying original
-  data_clean <- data
-  
-  # Clean district names in user data
-  if (!is.null(name_clean)) {
-    data_clean[[district_col]] <- name_clean(data_clean[[district_col]])
-  }
-  
-  # Get unique districts from user data
-  user_districts <- unique(data_clean[[district_col]])
-  user_districts <- user_districts[!is.na(user_districts)]
-  
-  # Get map districts
-  map_districts <- unique(map[[map_district_col]])
-  
-  # Find matches
-  matched <- user_districts[user_districts %in% map_districts]
-  unmatched <- user_districts[!user_districts %in% map_districts]
-  
-  # Calculate match rate
-  match_rate <- length(matched) / length(user_districts) * 100
-  
-  # Verbose output
-  if (verbose) {
-    message("\n=== District Matching Report ===")
-    message("Total districts in data: ", length(user_districts))
-    message("Successfully matched: ", length(matched), 
-            " (", round(match_rate, 1), "%)")
-    
-    if (length(unmatched) > 0) {
-      message("\nUnmatched districts (", length(unmatched), "):")
-      message(paste(unmatched, collapse = ", "))
-      
-      # Suggest closest matches
-      message("\nDid you mean?")
-      for (u in unmatched) {
-        suggestions <- mw_suggest_matches(u, map_districts)
-        if (length(suggestions) > 0) {
-          message("  '", u, "' -> ", paste(suggestions, collapse = ", "))
-        }
-      }
-    }
-    
-    if (length(matched) > 0) {
-      message("\nMatched districts:")
-      message(paste(matched, collapse = ", "))
-    }
-    message("================================")
-  }
-  
-  # Prepare for join
-  if (is.null(by)) {
-    # Set up join columns
-    join_cols <- stats::setNames(district_col, map_district_col)
-    
-    # Perform join
-    if (keep_all) {
-      result <- dplyr::left_join(
-        map,
-        data_clean,
-        by = join_cols,
-        ...
-      )
-    } else {
-      result <- dplyr::inner_join(
-        map,
-        data_clean,
-        by = join_cols,
-        ...
-      )
-    }
+
+  unit_col <- if (missing(unit_col) || is.null(unit_col)) {
+    mw_default_unit_col(level)
   } else {
-    # Custom join columns
-    result <- merge(map, data_clean, by = by, all.x = keep_all, ...)
-    if (inherits(map, "sf")) {
-      result <- sf::st_as_sf(result)
+    mw_capture_col(substitute(unit_col), parent.frame())
+  }
+
+  if (!unit_col %in% names(data)) {
+    stop(
+      "Column `", unit_col, "` was not found in `data`. Available columns: ",
+      paste(names(data), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  if (!map_col %in% names(map)) {
+    stop(
+      "Column `", map_col, "` was not found in `map`. Available columns: ",
+      paste(names(map), collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  if (!is.null(by)) {
+    result <- if (keep_all) {
+      dplyr::left_join(map, data, by = by, ...)
+    } else {
+      dplyr::inner_join(map, data, by = by, ...)
+    }
+    return(sf::st_as_sf(result))
+  }
+
+  data_clean <- as.data.frame(data)
+  data_clean$.mw_join_key <- mw_clean_key(data_clean[[unit_col]])
+
+  map_clean <- map
+  map_clean$.mw_join_key <- mw_clean_key(map_clean[[map_col]])
+
+  user_keys <- unique(data_clean$.mw_join_key[!is.na(data_clean$.mw_join_key)])
+  map_keys <- unique(map_clean$.mw_join_key[!is.na(map_clean$.mw_join_key)])
+  unmatched_keys <- setdiff(user_keys, map_keys)
+
+  if (length(unmatched_keys) > 0L && unmatched != "ignore") {
+    unmatched_values <- unique(data_clean[[unit_col]][data_clean$.mw_join_key %in% unmatched_keys])
+    msg <- paste0(
+      "Could not match ", length(unmatched_values), " ",
+      mw_level_label(level), " name(s): ",
+      paste(unmatched_values, collapse = ", ")
+    )
+    suggestions <- mw_join_suggestions(unmatched_values, map[[map_col]])
+    if (length(suggestions) > 0L) {
+      msg <- paste0(msg, "\nClosest matches:\n", paste(suggestions, collapse = "\n"))
+    }
+    if (unmatched == "error") {
+      stop(msg, call. = FALSE)
+    }
+    if (unmatched == "warning") {
+      warning(msg, call. = FALSE)
+    } else if (!quiet) {
+      message(msg)
     }
   }
-  
-  # Check for duplicate geometries after join
-  if (any(duplicated(sf::st_geometry(result)))) {
-    warning("Join resulted in duplicate geometries. ",
-            "Check for multiple matches in your data.")
+
+  duplicate_keys <- unique(data_clean$.mw_join_key[duplicated(data_clean$.mw_join_key)])
+  duplicate_keys <- duplicate_keys[!is.na(duplicate_keys) & duplicate_keys != ""]
+  if (length(duplicate_keys) > 0L) {
+    warning(
+      "Some input unit names occur more than once. The join may duplicate map ",
+      "features: ", paste(duplicate_keys, collapse = ", "),
+      call. = FALSE
+    )
   }
-  
-  return(result)
+
+  result <- if (keep_all) {
+    dplyr::left_join(map_clean, data_clean, by = ".mw_join_key", ...)
+  } else {
+    dplyr::inner_join(map_clean, data_clean, by = ".mw_join_key", ...)
+  }
+
+  result$.mw_join_key <- NULL
+  sf::st_as_sf(result)
 }
 
-#' Clean District Names for Matching
+mw_join_suggestions <- function(unmatched, candidates, n = 3) {
+  candidates <- unique(as.character(candidates))
+  candidates <- candidates[!is.na(candidates)]
+  if (length(candidates) == 0L) {
+    return(character(0))
+  }
+
+  vapply(
+    unmatched,
+    function(x) {
+      suggestions <- mw_suggest_matches(x, candidates, n = n)
+      paste0("  ", x, " -> ", paste(suggestions, collapse = ", "))
+    },
+    character(1)
+  )
+}
+
+#' Clean Malawi Administrative Names
 #'
-#' Standardizes district names to improve matching success when joining
-#' user data to Malawi map geometries. Converts to title case, removes
-#' trailing "District" or "TA" suffixes, and normalises known shapefile
-#' name variants (e.g. "Nkhata Bay" -> "Nkhatabay", "Mzuzu" -> "Mzuzu City").
+#' Standardise names for display and backwards-compatible workflows. For joins,
+#' `mw_join()` uses a stricter internal key that is robust to punctuation, case,
+#' and common suffixes such as "District" and "TA".
 #'
-#' @param x Character vector of district names.
-#'
-#' @return A cleaned character vector the same length as \code{x}.
-#'
+#' @param x Character vector of names.
+#' @return A character vector.
 #' @examples
-#' mw_clean_names(c("lilongwe", "BLANTYRE district", "nkhata bay"))
-#'
+#' mw_clean_names(c("lilongwe district", "Nkhata Bay", "T/A Mabuka"))
 #' @export
 mw_clean_names <- function(x) {
   x <- as.character(x)
-  x <- trimws(x)                        # Remove leading/trailing spaces
-  x <- gsub("\\s+", " ", x)             # Normalize multiple spaces
-  x <- tools::toTitleCase(tolower(x))   # Convert to Title Case
-  x <- gsub(" District$", "", x)        # Remove trailing "District"
-  x <- gsub(" T/A$| TA$", "", x)        # Remove trailing TA indicators
-
-  # Known shapefile name normalisations
-  x <- gsub("^Nkhata Bay$",  "Nkhatabay",  x)  # shapefile omits the space
-  x <- gsub("^Nkhatabay$",   "Nkhatabay",  x)  # already correct form
-  x <- gsub("^Mzuzu$",       "Mzuzu City", x)  # common short form
-
-  return(x)
+  x <- trimws(x)
+  x <- gsub("[[:space:]]+", " ", x)
+  x <- gsub("^T/A[[:space:]]+|^TA[[:space:]]+", "", x, ignore.case = TRUE)
+  x <- gsub("[[:space:]]+(District|Region|Traditional Authority|TA)$", "",
+            x, ignore.case = TRUE)
+  x <- tools::toTitleCase(tolower(x))
+  x <- gsub("^Nkhata Bay$", "Nkhatabay", x)
+  x <- gsub("^Mzuzu$", "Mzuzu City", x)
+  x
 }
 
-#' Suggest Close Matches for Unmatched District Names
+#' Suggest Close Malawi Name Matches
 #'
-#' Returns the closest matching district names from a candidate list, using
-#' edit-distance (Levenshtein) to handle typos and minor spelling differences.
-#' Called automatically by \code{\link{mw_join}} when unmatched districts are found.
-#'
-#' @param x Character. An unmatched district name.
-#' @param candidates Character vector of valid district names to search.
-#' @param n Integer. Number of suggestions to return. Default: 3.
-#'
-#' @return A character vector of up to \code{n} suggested matches.
-#'
+#' @param x Character. Name to match.
+#' @param candidates Character vector of valid names.
+#' @param n Number of suggestions.
+#' @return Character vector of suggested names.
 #' @examples
 #' mw_suggest_matches("Lilongwee", mw_districts())
-#'
 #' @importFrom utils adist
 #' @export
 mw_suggest_matches <- function(x, candidates, n = 3) {
-  if (!requireNamespace("utils", quietly = TRUE)) {
+  candidates <- unique(as.character(candidates))
+  candidates <- candidates[!is.na(candidates)]
+  if (length(candidates) == 0L) {
     return(character(0))
   }
-  
-  # Calculate string distances
-  distances <- utils::adist(x, candidates, ignore.case = TRUE)[1, ]
-  
-  # Get closest matches
-  closest <- order(distances)[1:min(n, length(candidates))]
-  
-  return(candidates[closest])
+
+  distances <- utils::adist(mw_clean_key(x), mw_clean_key(candidates))[1, ]
+  candidates[order(distances)][seq_len(min(n, length(candidates)))]
 }

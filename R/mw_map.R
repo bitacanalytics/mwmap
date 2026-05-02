@@ -1,598 +1,514 @@
-# ================================
-# mw_map.R
-# ================================
-#' Plot Malawi Map (Professional Edition)
+#' Get Malawi Boundary Data
 #'
-#' Main function for creating publication-ready Malawi maps with extensive
-#' customization options, including spatial visualization, custom projections,
-#' and professional cartographic elements.
+#' Return Malawi administrative boundaries from \pkg{mwmapdata}, with optional
+#' region, district, TA, and projection filters.
 #'
-#' @param data Optional dataset joined with the map. Can be a data.frame, sf object, or tibble.
-#' @param fill Column name in `data` used for fill colour.
-#' @param districts Optional vector of district names to plot (case-insensitive).
-#' @param region Optional region name to filter districts: "Northern", "Central", "Southern" (or shortcuts "n", "c", "s").
-#' @param level Administrative level: 0 = country, 1 = regions, 2 = districts (default), 3 = traditional authorities.
-#' @param lakes Show major lakes. Default: TRUE.
-#' @param borders Show administrative borders. Default: TRUE.
-#' @param border_color Border colour for main administrative units. Default: "#333333".
-#' @param border_size Border line width. Default: 0.3.
-#' @param lake_color Fill colour for lakes. Default: "#9ecae1".
-#' @param lake_border_color Border colour for lakes. Default: "#3182bd".
-#' @param alpha Fill transparency (0-1). Default: 1.
-#' @param title Map title. Default: NULL.
-#' @param subtitle Map subtitle. Default: NULL.
-#' @param caption Map caption. Default: NULL.
-#' @param fill_color Default fill colour if `fill` is NULL. Default: "#f0f0f0".
-#' @param fill_palette Colour palette for fill variable. Default: NULL.
-#' @param fill_scale_type Scale type: "continuous", "discrete", or "auto". Default: "auto".
-#' @param fill_breaks Custom breaks for continuous fill. Default: waiver().
-#' @param fill_labels Custom labels for fill legend. Default: waiver().
-#' @param fill_limits Limits for continuous fill. Default: NULL.
-#' @param fill_na Colour for NA values. Default: "#bdbdbd".
-#' @param legend_title Title for fill legend. Defaults to `fill` parameter.
-#' @param legend_position Legend position: "right", "left", "top", "bottom", "none", or coordinates. Default: "right".
-#' @param projection Map projection. Default: "EPSG:4326".
-#' @param grid Show coordinate grid. Default: FALSE.
-#' @param grid_lines Show grid lines (if `grid = TRUE`). Default: TRUE.
-#' @param grid_labels Show grid labels (if `grid = TRUE`). Default: TRUE.
-#' @param scale_bar Add scale bar. Default: FALSE.
-#' @param scale_bar_position Position of scale bar: "bottomright", "bottomleft", "topright", "topleft". Default: "bottomright".
-#' @param north_arrow Add north arrow. Default: FALSE.
-#' @param north_arrow_position Position of north arrow. Default: "topright".
-#' @param interactive Return interactive plot (TRUE/FALSE) using plotly. Default: FALSE.
-#' @param highlight_districts Vector of districts to highlight with different border. Default: NULL.
-#' @param highlight_border_color Border colour for highlighted districts. Default: "#E41A1C".
-#' @param highlight_border_size Border size for highlighted districts. Default: 1.2.
-#' @param highlight_fill Fill colour for highlighted districts (NA for outline only). Default: NA.
-#' @param label_districts Show district labels. Default: FALSE.
-#' @param label_column Column to use for labels. Default: "ADM2_EN" for level 2.
-#' @param label_size Size of district labels. Default: 3.
-#' @param label_color Colour of district labels. Default: "#333333".
-#' @param label_repel Use ggrepel to avoid overlapping labels. Default: FALSE.
-#' @param theme Custom ggplot2 theme (NULL for default). Default: NULL.
-#' @param quiet Suppress messages. Default: FALSE.
-#' @param ... Additional arguments passed to ggplot2::geom_sf().
+#' @param level Administrative level: `0`/`"country"`, `1`/`"region"`,
+#'   `2`/`"district"`, or `3`/`"ta"`.
+#' @param region Optional region filter.
+#' @param districts Optional district filter.
+#' @param tas Optional Traditional Authority filter.
+#' @param projection Coordinate reference system. Defaults to `"EPSG:4326"`.
 #'
-#' @return A ggplot2 object (or plotly object if `interactive = TRUE`).
-#' @importFrom ggplot2 ggplot coord_sf geom_sf geom_text theme_void labs theme
-#' @importFrom ggplot2 scale_fill_gradientn scale_fill_distiller scale_fill_gradient
-#' @importFrom ggplot2 scale_fill_discrete scale_fill_manual element_text element_blank
-#' @importFrom ggplot2 aes waiver
-#' @importFrom sf st_transform st_centroid st_coordinates
-#' @importFrom tools toTitleCase
+#' @return An sf object.
+#' @examples
+#' \donttest{
+#' mw_get_map("district")
+#' mw_get_map("ta", districts = "Lilongwe")
+#' }
 #' @export
+mw_get_map <- function(
+  level = 2,
+  region = NULL,
+  districts = NULL,
+  tas = NULL,
+  projection = "EPSG:4326"
+) {
+  mw_prepare_map(
+    level = level,
+    region = region,
+    districts = districts,
+    tas = tas,
+    projection = projection
+  )
+}
 
+#' Create a Professional Malawi Map
+#'
+#' `mw_map()` is the main high-level plotting function in mwmap. It can draw
+#' Malawi boundaries at country, region, district, or Traditional Authority
+#' level, join your data by name, and choose an appropriate colour scale for
+#' numeric or categorical values.
+#'
+#' @param data Optional data frame or sf object. If a data frame is supplied it
+#'   is joined to the selected Malawi boundaries.
+#' @param fill Optional column to map to fill colour. May be quoted or unquoted.
+#' @param unit_col Column in `data` containing names to join by. May be quoted
+#'   or unquoted. Defaults to `country`, `region`, `district`, or `ta`,
+#'   depending on `level`.
+#' @param level Administrative level: `0`/`"country"`, `1`/`"region"`,
+#'   `2`/`"district"`, or `3`/`"ta"`.
+#' @param region Optional region filter.
+#' @param districts Optional district filter. For `level = "ta"`, this maps TAs
+#'   only inside the selected districts.
+#' @param tas Optional Traditional Authority filter.
+#' @param palette Name of a Malawi palette, a vector of colours, or a palette
+#'   function. Defaults to `"health"` for numeric data and `"qualitative_2"` for
+#'   categorical data.
+#' @param scale_type `"auto"`, `"continuous"`, or `"discrete"`.
+#' @param reverse Reverse the fill palette.
+#' @param na_color Fill colour for missing values.
+#' @param fill_color Fill colour used when `fill` is not supplied.
+#' @param border_color Boundary colour.
+#' @param border_size Boundary line width.
+#' @param alpha Fill opacity.
+#' @param lakes Add Lake Malawi.
+#' @param lake_color Lake fill colour.
+#' @param lake_border_color Lake border colour.
+#' @param district_borders Add district outlines on TA maps.
+#' @param district_border_color District outline colour on TA maps.
+#' @param district_border_size District outline width on TA maps.
+#' @param highlight_districts Districts to outline.
+#' @param highlight_tas Traditional Authorities to outline.
+#' @param highlight_color Highlight outline colour.
+#' @param highlight_size Highlight outline width.
+#' @param labels Add labels for mapped features.
+#' @param label_column Optional label column. Defaults to the level name column.
+#' @param label_size Label size.
+#' @param label_color Label colour.
+#' @param label_repel Use \pkg{ggrepel} for label placement if installed.
+#' @param title,subtitle,caption Plot labels.
+#' @param legend_title Legend title. Defaults to the fill column.
+#' @param legend_position Legend position.
+#' @param projection Coordinate reference system.
+#' @param scale_bar Add a scale bar if \pkg{ggspatial} is installed.
+#' @param north_arrow Add a north arrow if \pkg{ggspatial} is installed.
+#' @param interactive Return a plotly object if \pkg{plotly} is installed.
+#' @param quiet Suppress join messages.
+#' @param ... Additional arguments passed to [ggplot2::geom_sf()].
+#'
+#' @return A ggplot2 object, or a plotly object when `interactive = TRUE`.
+#' @examples
+#' \donttest{
+#' mw_map()
+#'
+#' df <- data.frame(
+#'   district = c("Lilongwe", "Blantyre", "Mzuzu"),
+#'   cases = c(120, 80, 35)
+#' )
+#' mw_map(df, fill = cases)
+#'
+#' ta_df <- data.frame(
+#'   ta = c("Mabuka", "Mwaulambia"),
+#'   coverage = c(72, 64)
+#' )
+#' mw_map(ta_df, fill = coverage, level = "ta", districts = "Mulanje")
+#' }
+#' @importFrom ggplot2 aes coord_sf element_blank element_line element_rect
+#' @importFrom ggplot2 element_text geom_sf geom_text ggplot labs margin
+#' @importFrom ggplot2 scale_fill_gradientn scale_fill_manual scale_fill_discrete
+#' @importFrom ggplot2 theme theme_void unit waiver
+#' @importFrom rlang ensym as_string
+#' @importFrom sf st_centroid st_coordinates st_transform
+#' @export
 mw_map <- function(
   data = NULL,
-  fill = NULL,
-  districts = NULL,
-  region = NULL,
+  fill,
+  unit_col,
   level = 2,
-  lakes = FALSE,
-  borders = TRUE,
-  border_color = "#333333",
-  border_size = 0.3,
-  lake_color = "#9ecae1",
-  lake_border_color = "#3182bd",
+  region = NULL,
+  districts = NULL,
+  tas = NULL,
+  palette = NULL,
+  scale_type = c("auto", "continuous", "discrete"),
+  reverse = FALSE,
+  na_color = "#D7DCE2",
+  fill_color = "#F2F4F3",
+  border_color = "#252222",
+  border_size = 0.25,
   alpha = 1,
+  lakes = FALSE,
+  lake_color = "#A7D8F0",
+  lake_border_color = "#5D9BC2",
+  district_borders = NULL,
+  district_border_color = "#2F3437",
+  district_border_size = 0.45,
+  highlight_districts = NULL,
+  highlight_tas = NULL,
+  highlight_color = "#D7263D",
+  highlight_size = 1,
+  labels = FALSE,
+  label_column = NULL,
+  label_size = NULL,
+  label_color = "#222222",
+  label_repel = FALSE,
   title = NULL,
   subtitle = NULL,
   caption = NULL,
-  fill_color = "#f0f0f0",
-  fill_palette = NULL,
-  fill_scale_type = "auto",
-  fill_breaks = waiver(),
-  fill_labels = waiver(),
-  fill_limits = NULL,
-  fill_na = "#bdbdbd",
   legend_title = NULL,
   legend_position = "right",
   projection = "EPSG:4326",
-  grid = FALSE,
-  grid_lines = TRUE,
-  grid_labels = TRUE,
   scale_bar = FALSE,
-  scale_bar_position = "bottomright",
   north_arrow = FALSE,
-  north_arrow_position = "topright",
   interactive = FALSE,
-  highlight_districts = NULL,
-  highlight_border_color = "#E41A1C",
-  highlight_border_size = 1.2,
-  highlight_fill = NA,
-  label_districts = FALSE,
-  label_column = NULL,
-  label_size = 3,
-  label_color = "#333333",
-  label_repel = FALSE,
-  theme = NULL,
   quiet = FALSE,
   ...
 ) {
-  # Fallback operator
-  `%||%` <- function(a, b) if (!is.null(a)) a else b
+  level <- mw_level_key(level)
+  scale_type <- match.arg(scale_type)
 
-  # Validate level
-  if (!level %in% 0:3) {
-    stop("level must be 0, 1, 2, or 3")
-  }
+  fill_col <- if (missing(fill)) NULL else mw_capture_col(substitute(fill), parent.frame())
+  unit_col_name <- if (missing(unit_col)) NULL else mw_capture_col(substitute(unit_col), parent.frame())
 
-  # Validate region
-  if (
-    !is.null(region) &&
-      !tolower(region) %in% c("northern", "central", "southern", "n", "c", "s")
-  ) {
-    stop(
-      "region must be one of: 'Northern', 'Central', 'Southern' (or shortcuts 'n', 'c', 's')"
-    )
-  }
-
-  # Choose map data
-  map_data <- switch(
-    as.character(level),
-    "0" = mw_level_0,
-    "1" = mw_level_1,
-    "2" = mw_level_2,
-    "3" = mw_level_3,
-    stop("Invalid level")
+  map_data <- mw_prepare_map(
+    level = level,
+    region = region,
+    districts = districts,
+    tas = tas,
+    projection = projection
   )
 
-  # Default label column
-  label_column <- label_column %||%
-    switch(
-      as.character(level),
-      "0" = "ADM0_EN",
-      "1" = "ADM1_EN",
-      "2" = "ADM2_EN",
-      "3" = "ADM3_EN"
-    )
-
-  # Region filter
-  if (!is.null(region)) {
-    region_expanded <- mw_expand_region(region)
-    map_data <- map_data[map_data$ADM1_EN %in% region_expanded, ]
-    if (nrow(map_data) == 0) {
-      stop(
-        "No data found for region: ",
-        paste(region_expanded, collapse = ", ")
-      )
-    }
-    if (!quiet) {
-      message(
-        "Filtered to ",
-        paste(region_expanded, collapse = ", "),
-        " region (",
-        nrow(map_data),
-        " features)"
-      )
-    }
-  }
-
-  # District filter
-  if (!is.null(districts)) {
-    district_col <- switch(
-      as.character(level),
-      "0" = "ADM0_EN",
-      "1" = "ADM1_EN",
-      "2" = "ADM2_EN",
-      "3" = "ADM3_EN"
-    )
-    districts_clean <- mw_clean_names(districts)
-    map_districts <- mw_clean_names(map_data[[district_col]])
-    map_data <- map_data[map_districts %in% districts_clean, ]
-    if (nrow(map_data) == 0) {
-      stop("No matching districts found")
-    }
-    if (!quiet) message("Filtered to ", nrow(map_data), " districts")
-  }
-
-  # Projection
-  if (projection != "EPSG:4326") {
-    map_data <- sf::st_transform(map_data, crs = projection)
-    if (lakes && exists("major_lakes") && inherits(major_lakes, "sf")) {
-      major_lakes <- sf::st_transform(major_lakes, crs = projection)
-    }
-  }
-
-  # Join external data
-  # If data is already an sf object (e.g. pre-joined by mw_choropleth),
-  # use it directly as map_data instead of attempting another join.
   if (!is.null(data)) {
-    # Join external data
-    # If data is already an sf object (e.g. pre-joined by mw_choropleth),
-    # use it directly as map_data instead of attempting another join.
-
-    if (!is.null(data)) {
-      # HARD VALIDATION FIRST (CRAN SAFE)
-      if (!inherits(data, "sf") && !inherits(data, "data.frame")) {
-        stop("'data' must be a data.frame or sf object", call. = FALSE)
+    if (inherits(data, "sf")) {
+      map_data <- data
+      if (!identical(projection, "EPSG:4326")) {
+        map_data <- sf::st_transform(map_data, projection)
       }
-
-      # SF OBJECT: use directly
-      if (inherits(data, "sf")) {
-        map_data <- data
-      } else {
-        # FORCE SAFE STRUCTURE (important for CRAN)
-        data <- as.data.frame(data)
-
-        map_data <- mw_join(
-          data = data,
-          map = map_data,
-          map_district_col = switch(
-            as.character(level),
-            "0" = "ADM0_EN",
-            "1" = "ADM1_EN",
-            "2" = "ADM2_EN",
-            "3" = "ADM3_EN"
-          ),
-          quiet = quiet
-        )
+    } else {
+      join_args <- list(
+        data = data,
+        level = level,
+        map = map_data,
+        keep_all = TRUE,
+        quiet = quiet
+      )
+      if (!is.null(unit_col_name)) {
+        join_args$unit_col <- unit_col_name
       }
+      map_data <- do.call(mw_join, join_args)
     }
   }
 
-  # Base plot
-  p <- ggplot2::ggplot() +
-    ggplot2::coord_sf(
-      crs = projection,
-      datum = if (grid) projection else NULL,
-      expand = FALSE
+  if (!is.null(fill_col) && !fill_col %in% names(map_data)) {
+    warning(
+      "Fill column `", fill_col, "` was not found after joining data. ",
+      "Drawing an unfilled map instead.",
+      call. = FALSE
     )
+    fill_col <- NULL
+  }
 
-  # Main map layer
-  if (!is.null(fill) && fill %in% names(map_data)) {
-    if (fill_scale_type == "auto") {
-      fill_scale_type <- if (is.numeric(map_data[[fill]])) {
-        "continuous"
-      } else {
-        "discrete"
-      }
-    }
+  if (scale_type == "auto" && !is.null(fill_col)) {
+    scale_type <- if (mw_is_discrete(map_data[[fill_col]])) "discrete" else "continuous"
+  }
+  palette <- palette %||% if (identical(scale_type, "discrete")) "qualitative_2" else "health"
+
+  p <- ggplot2::ggplot()
+
+  if (!is.null(fill_col)) {
     p <- p +
       ggplot2::geom_sf(
         data = map_data,
-        ggplot2::aes(fill = .data[[fill]]),
-        color = if (borders) border_color else NA,
+        ggplot2::aes(fill = .data[[fill_col]]),
+        color = border_color,
         linewidth = border_size,
         alpha = alpha,
         ...
+      ) +
+      mw_fill_scale(
+        values = map_data[[fill_col]],
+        palette = palette,
+        scale_type = scale_type,
+        reverse = reverse,
+        na_color = na_color,
+        name = legend_title %||% mw_pretty_title(fill_col)
       )
-    p <- add_fill_scale_mw(
-      p,
-      fill,
-      fill_palette,
-      fill_scale_type,
-      fill_breaks,
-      fill_labels,
-      fill_limits,
-      fill_na,
-      legend_title %||% fill
-    )
   } else {
     p <- p +
       ggplot2::geom_sf(
         data = map_data,
         fill = fill_color,
-        color = if (borders) border_color else NA,
+        color = border_color,
         linewidth = border_size,
         alpha = alpha,
         ...
       )
-    if (!quiet && !is.null(fill)) {
-      warning(
-        "Column '",
-        fill,
-        "' not found in data. Using fill_color instead."
-      )
-    }
   }
 
-  # Lakes
-  if (lakes && exists("major_lakes") && inherits(major_lakes, "sf")) {
+  if (isTRUE(lakes)) {
+    lakes_data <- mwmapdata::major_lakes
+    if (!identical(projection, "EPSG:4326")) {
+      lakes_data <- sf::st_transform(lakes_data, projection)
+    }
     p <- p +
       ggplot2::geom_sf(
-        data = major_lakes,
+        data = lakes_data,
         fill = lake_color,
         color = lake_border_color,
-        alpha = alpha
+        linewidth = 0.2
       )
   }
 
-  # Highlight districts
-  if (!is.null(highlight_districts)) {
-    highlight_col <- switch(
-      as.character(level),
-      "0" = "ADM0_EN",
-      "1" = "ADM1_EN",
-      "2" = "ADM2_EN",
-      "3" = "ADM3_EN"
+  district_borders <- district_borders %||% identical(level, 3L)
+  if (isTRUE(district_borders) && level == 3L) {
+    district_data <- mw_prepare_map(
+      level = 2,
+      region = region,
+      districts = districts,
+      projection = projection
     )
-    highlight_clean <- mw_clean_names(highlight_districts)
-    map_highlights <- mw_clean_names(map_data[[highlight_col]])
-    highlight_data <- map_data[map_highlights %in% highlight_clean, ]
-    if (nrow(highlight_data) > 0) {
-      p <- p +
-        ggplot2::geom_sf(
-          data = highlight_data,
-          fill = highlight_fill,
-          color = highlight_border_color,
-          linewidth = highlight_border_size
-        )
-    }
-  }
-
-  # Labels
-  if (label_districts && label_column %in% names(map_data)) {
-    if (label_repel && requireNamespace("ggrepel", quietly = TRUE)) {
-      p <- add_label_repel_mw(
-        p,
-        map_data,
-        label_column,
-        label_size,
-        label_color
+    p <- p +
+      ggplot2::geom_sf(
+        data = district_data,
+        fill = NA,
+        color = district_border_color,
+        linewidth = district_border_size
       )
-    } else {
-      p <- add_labels_mw(p, map_data, label_column, label_size, label_color)
-    }
   }
 
-  # Scale bar
+  p <- add_highlights(
+    p,
+    level = level,
+    projection = projection,
+    region = region,
+    districts = highlight_districts,
+    tas = highlight_tas,
+    color = highlight_color,
+    size = highlight_size
+  )
+
+  if (isTRUE(labels)) {
+    label_column <- label_column %||% mw_name_column(level)
+    label_size <- label_size %||% if (level == 3L) 2 else 3
+    p <- add_map_labels(
+      p,
+      map_data,
+      label_column = label_column,
+      size = label_size,
+      color = label_color,
+      repel = label_repel
+    )
+  }
+
   if (scale_bar) {
-    p <- add_scale_bar_mw(p, map_data, scale_bar_position)
+    p <- add_scale_bar_mw(p)
   }
-
-  # North arrow
   if (north_arrow) {
-    p <- add_north_arrow_mw(p, map_data, north_arrow_position)
+    p <- add_north_arrow_mw(p)
   }
 
-  # Grid
-  if (grid) {
-    p <- p + add_grid_mw(grid_lines, grid_labels)
-  }
-
-  # Theme
-  if (is.null(theme)) {
-    p <- p + ggplot2::theme_void()
-    if (grid && grid_labels) {
-      p <- p +
-        ggplot2::theme(
-          axis.text = ggplot2::element_text(color = "grey50", size = 8)
-        )
-    }
-  } else {
-    p <- p + theme
-  }
-
-  # Titles
   p <- p +
+    ggplot2::coord_sf(crs = projection, datum = NA, expand = FALSE) +
     ggplot2::labs(
       title = title,
       subtitle = subtitle,
       caption = caption,
-      fill = legend_title
-    )
-  p <- p + ggplot2::theme(legend.position = legend_position)
+      fill = legend_title %||% if (!is.null(fill_col)) mw_pretty_title(fill_col) else NULL
+    ) +
+    mw_theme(legend_position = legend_position)
 
-  # Interactive
-  if (interactive && requireNamespace("plotly", quietly = TRUE)) {
-    p <- plotly::ggplotly(p)
+  if (interactive) {
+    if (!requireNamespace("plotly", quietly = TRUE)) {
+      warning("Package 'plotly' is required for interactive maps. Returning ggplot.")
+    } else {
+      p <- plotly::ggplotly(p)
+    }
   }
 
-  return(p)
+  p
 }
 
-# ================================
-# Helper functions
-# ================================
-
-add_fill_scale_mw <- function(
-  p,
-  fill_var,
+mw_fill_scale <- function(
+  values,
   palette,
   scale_type,
-  breaks,
-  labels,
-  limits,
-  na_color,
-  legend_title
+  reverse = FALSE,
+  na_color = "#D7DCE2",
+  name = NULL
 ) {
-  if (!exists("malawi_palettes")) {
-    malawi_palettes <- list()
+  if (is.character(palette) && length(palette) == 1L &&
+      palette %in% names(malawi_palettes)) {
+    return(scale_fill_mw(
+      palette = palette,
+      reverse = reverse,
+      discrete = identical(scale_type, "discrete"),
+      na.value = na_color,
+      name = name
+    ))
   }
-  is_mw_palette <- is.character(palette) &&
-    length(palette) == 1 &&
-    palette %in% names(malawi_palettes)
 
-  if (scale_type == "continuous") {
-    if (is_mw_palette) {
-      p <- p +
-        scale_fill_mw(
-          palette = palette,
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels,
-          limits = limits,
-          discrete = FALSE
-        )
-    } else if (is.character(palette) && length(palette) == 1) {
-      p <- p +
-        ggplot2::scale_fill_distiller(
-          palette = palette,
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels,
-          limits = limits
-        )
-    } else if (is.function(palette)) {
-      p <- p +
-        ggplot2::scale_fill_gradientn(
-          colors = palette(100),
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels,
-          limits = limits
-        )
-    } else if (is.character(palette) && length(palette) > 1) {
-      p <- p +
-        ggplot2::scale_fill_gradientn(
-          colors = palette,
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels,
-          limits = limits
-        )
-    } else {
-      p <- p +
-        ggplot2::scale_fill_gradient(
-          low = "#f7f7f7",
-          high = "#08519c",
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels,
-          limits = limits
-        )
-    }
+  if (is.function(palette)) {
+    colors <- palette(if (identical(scale_type, "discrete")) mw_distinct_count(values) else 100)
   } else {
-    if (is_mw_palette) {
-      p <- p +
-        scale_fill_mw(
-          palette = palette,
-          name = legend_title,
-          na.value = na_color,
-          discrete = TRUE
-        )
-    } else if (is.null(palette)) {
-      p <- p +
-        ggplot2::scale_fill_discrete(
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels
-        )
-    } else {
-      p <- p +
-        ggplot2::scale_fill_manual(
-          values = palette,
-          name = legend_title,
-          na.value = na_color,
-          breaks = breaks,
-          labels = labels
-        )
-    }
+    colors <- palette
   }
-  return(p)
+  if (reverse) {
+    colors <- rev(colors)
+  }
+
+  if (identical(scale_type, "continuous")) {
+    ggplot2::scale_fill_gradientn(
+      colours = colors,
+      na.value = na_color,
+      name = name
+    )
+  } else if (is.null(colors)) {
+    ggplot2::scale_fill_discrete(
+      na.value = na_color,
+      name = name
+    )
+  } else {
+    ggplot2::scale_fill_manual(
+      values = colors,
+      na.value = na_color,
+      name = name
+    )
+  }
 }
 
-add_labels_mw <- function(p, map_data, label_column, size, color) {
-  centroids <- suppressWarnings(sf::st_centroid(map_data))
+mw_theme <- function(legend_position = "right") {
+  ggplot2::theme_void(base_size = 11) +
+    ggplot2::theme(
+      plot.background = ggplot2::element_rect(fill = "white", color = NA),
+      panel.background = ggplot2::element_rect(fill = "white", color = NA),
+      plot.title = ggplot2::element_text(
+        face = "bold",
+        size = 15,
+        color = "#1F2933",
+        margin = ggplot2::margin(b = 4)
+      ),
+      plot.subtitle = ggplot2::element_text(
+        size = 10.5,
+        color = "#4B5563",
+        margin = ggplot2::margin(b = 10)
+      ),
+      plot.caption = ggplot2::element_text(
+        size = 8.5,
+        color = "#68737D",
+        margin = ggplot2::margin(t = 8),
+        hjust = 1
+      ),
+      legend.position = legend_position,
+      legend.title = ggplot2::element_text(face = "bold", size = 9.5),
+      legend.text = ggplot2::element_text(size = 8.5),
+      legend.key.height = ggplot2::unit(0.55, "cm"),
+      legend.key.width = ggplot2::unit(0.45, "cm"),
+      legend.background = ggplot2::element_rect(fill = "white", color = NA),
+      plot.margin = ggplot2::margin(8, 10, 8, 10)
+    )
+}
+
+add_highlights <- function(
+  p,
+  level,
+  projection,
+  region = NULL,
+  districts = NULL,
+  tas = NULL,
+  color = "#D7263D",
+  size = 1
+) {
+  if (!is.null(districts)) {
+    district_data <- mw_prepare_map(
+      level = 2,
+      region = region,
+      districts = districts,
+      projection = projection
+    )
+    p <- p +
+      ggplot2::geom_sf(
+        data = district_data,
+        fill = NA,
+        color = color,
+        linewidth = size
+      )
+  }
+
+  if (!is.null(tas)) {
+    ta_data <- mw_prepare_map(
+      level = 3,
+      region = region,
+      tas = tas,
+      projection = projection
+    )
+    p <- p +
+      ggplot2::geom_sf(
+        data = ta_data,
+        fill = NA,
+        color = color,
+        linewidth = size
+      )
+  }
+
+  p
+}
+
+add_map_labels <- function(p, map_data, label_column, size, color, repel = FALSE) {
+  if (!label_column %in% names(map_data)) {
+    stop("Label column `", label_column, "` was not found.", call. = FALSE)
+  }
+
+  suppressWarnings({
+    centroids <- sf::st_centroid(map_data)
+  })
   coords <- sf::st_coordinates(centroids)
+  centroids$.mw_x <- coords[, "X"]
+  centroids$.mw_y <- coords[, "Y"]
+
+  if (isTRUE(repel) && requireNamespace("ggrepel", quietly = TRUE)) {
+    return(p +
+      ggrepel::geom_text_repel(
+        data = centroids,
+        ggplot2::aes(x = .data$.mw_x, y = .data$.mw_y, label = .data[[label_column]]),
+        size = size,
+        color = color,
+        min.segment.length = 0,
+        segment.color = "#9AA3AA",
+        segment.linewidth = 0.2,
+        box.padding = 0.25
+      ))
+  }
+
   p +
     ggplot2::geom_text(
       data = centroids,
-      ggplot2::aes(
-        x = coords[, "X"],
-        y = coords[, "Y"],
-        label = .data[[label_column]]
-      ),
+      ggplot2::aes(x = .data$.mw_x, y = .data$.mw_y, label = .data[[label_column]]),
       size = size,
       color = color,
       check_overlap = TRUE
     )
 }
 
-add_label_repel_mw <- function(p, map_data, label_column, size, color) {
-  if (!requireNamespace("ggrepel", quietly = TRUE)) {
-    return(add_labels_mw(p, map_data, label_column, size, color))
-  }
-  centroids <- suppressWarnings(sf::st_centroid(map_data))
-  coords <- sf::st_coordinates(centroids)
-  p +
-    ggrepel::geom_text_repel(
-      data = centroids,
-      ggplot2::aes(
-        x = coords[, "X"],
-        y = coords[, "Y"],
-        label = .data[[label_column]]
-      ),
-      size = size,
-      color = color,
-      box.padding = 0.5,
-      point.padding = 0.3,
-      segment.color = "grey50",
-      segment.size = 0.2,
-      min.segment.length = 0.1
-    )
-}
-
-add_scale_bar_mw <- function(p, map_data, position) {
+add_scale_bar_mw <- function(p, location = "br") {
   if (!requireNamespace("ggspatial", quietly = TRUE)) {
     return(p)
   }
   p +
     ggspatial::annotation_scale(
-      location = position,
-      width_hint = 0.2,
-      pad_x = ggplot2::unit(0.5, "cm"),
-      pad_y = ggplot2::unit(0.5, "cm"),
-      style = "bar"
+      location = location,
+      width_hint = 0.18,
+      text_cex = 0.65,
+      line_width = 0.35,
+      pad_x = ggplot2::unit(0.25, "cm"),
+      pad_y = ggplot2::unit(0.25, "cm")
     )
 }
 
-add_north_arrow_mw <- function(p, map_data, position) {
+add_north_arrow_mw <- function(p, location = "tr") {
   if (!requireNamespace("ggspatial", quietly = TRUE)) {
     return(p)
   }
   p +
     ggspatial::annotation_north_arrow(
-      location = position,
+      location = location,
       which_north = "true",
-      pad_x = ggplot2::unit(0.5, "cm"),
-      pad_y = ggplot2::unit(0.5, "cm"),
-      style = ggspatial::north_arrow_fancy_orienteering(
-        fill = c("white", "black"),
-        line_col = "grey20"
+      height = ggplot2::unit(0.8, "cm"),
+      width = ggplot2::unit(0.8, "cm"),
+      pad_x = ggplot2::unit(0.25, "cm"),
+      pad_y = ggplot2::unit(0.25, "cm"),
+      style = ggspatial::north_arrow_minimal(
+        line_col = "#1F2933",
+        text_col = "#1F2933"
       )
     )
-}
-
-add_grid_mw <- function(grid_lines, grid_labels) {
-  theme_elems <- list()
-  if (grid_lines) {
-    theme_elems$panel.grid.major <- ggplot2::element_line(
-      color = "grey80",
-      linewidth = 0.2
-    )
-    theme_elems$panel.grid.minor <- ggplot2::element_line(
-      color = "grey90",
-      linewidth = 0.1
-    )
-  }
-  if (grid_labels) {
-    theme_elems$axis.text <- ggplot2::element_text(color = "grey50", size = 8)
-    theme_elems$axis.text.x <- ggplot2::element_text(angle = 0, hjust = 0.5)
-    theme_elems$axis.text.y <- ggplot2::element_text(angle = 0, hjust = 1)
-  }
-  ggplot2::theme(!!!theme_elems)
-}
-
-mw_expand_region <- function(region) {
-  region <- tolower(region)
-  region_map <- c(
-    "n" = "Northern",
-    "northern" = "Northern",
-    "c" = "Central",
-    "central" = "Central",
-    "s" = "Southern",
-    "southern" = "Southern"
-  )
-  if (region %in% names(region_map)) {
-    return(region_map[region])
-  }
-  tools::toTitleCase(region)
 }

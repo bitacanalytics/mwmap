@@ -13,46 +13,25 @@ mw_districts(
 )
 }
 \arguments{
-\item{region}{Optional region filter. Accepts:
-\itemize{
-\item Full names: "Northern", "Central", "Southern"
-\item Shortcuts: "n", "c", "s" (case insensitive)
-\item NULL: returns all districts (default)
-}}
+\item{region}{Optional region filter. Accepts \code{"Northern"}, \code{"Central"},
+\code{"Southern"} and shortcuts such as \code{"n"}, \code{"c"}, and \code{"s"}.}
 
-\item{type}{Character. Type of names to return:
-\itemize{
-\item "standard": Standard district names (default)
-\item "admin": Administrative names as in shapefile
-\item "short": Short form names
-\item "all": Return full data frame with all information
-}}
+\item{type}{\code{"standard"}, \code{"admin"}, \code{"short"}, or \code{"all"}.}
 
-\item{sorted}{Logical. Sort alphabetically? Default: TRUE.}
+\item{sorted}{Sort alphabetically.}
 
-\item{include_ta}{Logical. Include Traditional Authorities? Default: FALSE.}
+\item{include_ta}{Deprecated. Use \code{\link[=mw_tas]{mw_tas()}} for Traditional Authorities.}
 
-\item{quiet}{Logical. Suppress messages? Default: FALSE.}
+\item{quiet}{Suppress messages.}
 }
 \value{
-If type = "all", returns a data frame with district information.
-Otherwise, returns a character vector of district names.
+A character vector, or a data frame when \code{type = "all"}.
 }
 \description{
-Returns a clean vector of Malawi district names with various filtering options.
-Useful for validation, selection interfaces, and documentation.
+Return district names from the current \pkg{mwmapdata} boundary data.
 }
 \examples{
-\donttest{
-# All districts
 mw_districts()
-
-# Southern region districts
 mw_districts("Southern")
-mw_districts("s")
-
-# Get all information
 mw_districts(type = "all")
-}
-
 }

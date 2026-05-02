@@ -2,111 +2,58 @@
 % Please edit documentation in R/mw_choropleth.R
 \name{mw_choropleth}
 \alias{mw_choropleth}
-\title{Create Malawi Choropleth Map}
+\title{Create a Malawi Choropleth Map}
 \usage{
 mw_choropleth(
   data,
   value,
-  district_col = "district",
-  palette = "health",
+  unit_col,
   level = 2,
-  lakes = FALSE,
-  border_color = "black",
-  border_size = 0.3,
-  alpha = 1,
+  palette = NULL,
   title = NULL,
   subtitle = NULL,
+  caption = NULL,
   legend_title = NULL,
-  na_color = "grey50",
-  scale_type = "auto",
-  n_breaks = 5,
-  breaks = waiver(),
-  labels = waiver(),
-  direction = 1,
-  interactive = FALSE,
-  quiet = FALSE,
   ...
 )
 }
 \arguments{
-\item{data}{Data frame containing district-level values to map.}
+\item{data}{Data frame containing values to map.}
 
-\item{value}{Column name (unquoted) containing values for choropleth fill.
-Can be numeric (continuous scale) or factor/categorical (discrete scale).}
+\item{value}{Column to map to fill colour. May be quoted or unquoted.}
 
-\item{district_col}{Column name (unquoted) containing district names.
-Default: "district". Case insensitive matching is applied.}
+\item{unit_col}{Column containing administrative unit names. May be quoted or
+unquoted. Defaults by \code{level}.}
 
-\item{palette}{Character. Name of Malawi palette (see \link{scale_fill_mw}) or
-a custom palette function/vector. Default: "health".}
+\item{level}{Administrative level. Use \code{"ta"} for Traditional Authorities.}
 
-\item{level}{Integer. Administrative level: 0=country, 1=regions, 2=districts,
-3=traditional authorities. Default: 2.}
+\item{palette}{Malawi palette name, colour vector, or palette function.}
 
-\item{lakes}{Logical. Show major lakes? Default: TRUE.}
+\item{title, subtitle, caption}{Plot labels.}
 
-\item{border_color}{Character. Border colour. Default: "black".}
+\item{legend_title}{Legend title.}
 
-\item{border_size}{Numeric. Border line width. Default: 0.3.}
-
-\item{alpha}{Numeric. Fill transparency (0-1). Default: 1.}
-
-\item{title}{Character. Map title. Default: NULL.}
-
-\item{subtitle}{Character. Map subtitle. Default: NULL.}
-
-\item{legend_title}{Character. Legend title. Defaults to \code{value} name.}
-
-\item{na_color}{Character. Colour for missing values. Default: "grey50".}
-
-\item{scale_type}{Character. "continuous", "discrete", or "auto".
-Default: "auto" (detects from data).}
-
-\item{n_breaks}{Numeric. Number of breaks for continuous scale. Default: 5.}
-
-\item{breaks}{Optional custom break points.}
-
-\item{labels}{Optional custom legend labels.}
-
-\item{direction}{Numeric. Palette direction: 1 = normal, -1 = reversed.
-Default: 1.}
-
-\item{interactive}{Logical. Return interactive plotly object? Default: FALSE.}
-
-\item{quiet}{Logical. Suppress messages? Default: FALSE.}
-
-\item{...}{Additional arguments passed to \code{\link[=mw_map]{mw_map()}}.}
+\item{...}{Passed to \code{\link[=mw_map]{mw_map()}}.}
 }
 \value{
-A ggplot2 object (or plotly object if interactive=TRUE).
+A ggplot2 object.
 }
 \description{
-Quickly create publication-ready choropleth maps from district-level data.
-This function handles data joining, scaling, and visualization in one step.
+A convenient wrapper around \code{\link[=mw_map]{mw_map()}} for mapping numeric or categorical
+values attached to Malawi administrative units.
 }
 \examples{
 \donttest{
-# Example with synthetic health data
-health_data <- data.frame(
-  district = c("Lilongwe", "Blantyre", "Mzimba", "Zomba", "Mzuzu City"),
-  malaria_cases = c(1245, 2890, 987, 1654, 743),
-  population = c(2300000, 1800000, 940000, 1050000, 220000)
+district_data <- data.frame(
+  district = c("Lilongwe", "Blantyre", "Mzuzu"),
+  cases = c(120, 80, 35)
 )
+mw_choropleth(district_data, cases)
 
-# Basic choropleth
-mw_choropleth(health_data, malaria_cases)
-
-# Calculate and map rates
-health_data$rate <- health_data$malaria_cases / health_data$population * 1000
-mw_choropleth(health_data, rate, 
-              palette = "malaria",
-              title = "Malaria Incidence Rate per 1000")
-
-# Categorical data
-health_data$risk_level <- cut(health_data$rate, 
-                              breaks = c(0, 0.5, 1, 2, 5),
-                              labels = c("Low", "Medium", "High", "Very High"))
-mw_choropleth(health_data, risk_level, palette = "health")
+ta_data <- data.frame(
+  ta = c("Mabuka", "Mwaulambia"),
+  status = c("On track", "Needs support")
+)
+mw_choropleth(ta_data, status, level = "ta")
 }
-
 }

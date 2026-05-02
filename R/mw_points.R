@@ -32,7 +32,7 @@
 #' @examples
 #' \donttest{
 #' library(ggplot2)
-#' 
+#'
 #' # Sample health facilities
 #' facilities <- data.frame(
 #'   name = c("Lilongwe Central Hospital", "Queen Elizabeth Central Hospital",
@@ -42,26 +42,26 @@
 #'   type = c("Central", "Central", "Central", "Central"),
 #'   beds = c(1200, 1350, 600, 450)
 #' )
-#' 
+#'
 #' # Basic points
-#' mw_map() + 
+#' mw_map() +
 #'   mw_points(facilities, lon, lat)
-#' 
+#'
 #' # Colored by type (pass column name as a string)
-#' mw_map() + 
+#' mw_map() +
 #'   mw_points(facilities, lon, lat, color = "type")
-#' 
+#'
 #' # Sized by beds (pass column name as a string)
-#' mw_map() + 
+#' mw_map() +
 #'   mw_points(facilities, lon, lat, size = "beds", alpha = 0.7)
-#' 
+#'
 #' # With labels
-#' mw_map() + 
+#' mw_map() +
 #'   mw_points(facilities, lon, lat,
 #'             label = TRUE, label_column = "name")
-#' 
+#'
 #' # Custom styling
-#' mw_map() + 
+#' mw_map() +
 #'   mw_points(facilities, lon, lat,
 #'             color = "darkblue", shape = 16, size = 4, alpha = 0.6)
 #' }
@@ -91,11 +91,12 @@ mw_points <- function(
   repel_labels = FALSE,
   ...
 ) {
-  
+
+
   # Capture column names
   lon_name <- rlang::as_string(rlang::ensym(lon))
   lat_name <- rlang::as_string(rlang::ensym(lat))
-  
+
   # Validate coordinates exist
   if (!lon_name %in% names(data)) {
     stop("Column '", lon_name, "' not found in data")
@@ -103,17 +104,17 @@ mw_points <- function(
   if (!lat_name %in% names(data)) {
     stop("Column '", lat_name, "' not found in data")
   }
-  
+
   # Check for missing coordinates
   missing_coords <- is.na(data[[lon_name]]) | is.na(data[[lat_name]])
   if (any(missing_coords)) {
     warning(sum(missing_coords), " rows have missing coordinates and will be skipped")
     data <- data[!missing_coords, ]
   }
-  
+
   # Create layers list
   layers <- list()
-  
+
   # Build aesthetic mapping
   if (is.null(mapping)) {
     point_mapping <- ggplot2::aes(
@@ -125,20 +126,20 @@ mw_points <- function(
     point_mapping$x <- rlang::ensym(lon)
     point_mapping$y <- rlang::ensym(lat)
   }
-  
+
   # Handle color mapping
   # color is already a string here, so use rlang::sym() not ensym()
   if (is.character(color) && length(color) == 1 && color %in% names(data)) {
     point_mapping$colour <- rlang::sym(color)
     color <- NULL
   }
-  
+
   # Handle size mapping
   if (is.character(size) && length(size) == 1 && size %in% names(data)) {
     point_mapping$size <- rlang::sym(size)
     size <- NULL
   }
-  
+
   # Convert data to sf points so geom_sf is used instead of geom_point.
   # This avoids the "coordinate system already present" warning that occurs
   # when geom_point triggers a second coord_sf on top of mw_map()'s coord_sf.
@@ -178,17 +179,17 @@ mw_points <- function(
       list(...)
     ))
   }
-  
+
   # Add labels if requested
   if (label) {
     if (is.null(label_column)) {
       stop("label_column must be specified when label = TRUE")
     }
-    
+
     if (!label_column %in% names(data)) {
       stop("Column '", label_column, "' not found in data")
     }
-    
+
     if (repel_labels && requireNamespace("ggrepel", quietly = TRUE)) {
       layers[[2]] <- ggrepel::geom_text_repel(
         data = data,
@@ -219,7 +220,7 @@ mw_points <- function(
       )
     }
   }
-  
+
   # Return layers
   if (length(layers) == 1) {
     return(layers[[1]])

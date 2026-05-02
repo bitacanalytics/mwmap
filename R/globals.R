@@ -8,6 +8,7 @@ utils::globalVariables(
     "mw_level_2",
     "mw_level_3",
     "major_lakes",
+    "lakes_data",
     "ADM2_EN",
     "ADM1_EN",
     "REGION",

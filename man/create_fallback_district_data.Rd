@@ -7,12 +7,13 @@
 create_fallback_district_data(include_ta = FALSE)
 }
 \arguments{
-\item{include_ta}{Logical. Include Traditional Authorities?}
+\item{include_ta}{Ignored.}
 }
 \value{
-Data frame with district information
+Data frame with current district information.
 }
 \description{
-Create fallback district data when package data is unavailable
+Retained for backwards compatibility. mwmap now reads district names from
+\pkg{mwmapdata}.
 }
 \keyword{internal}

@@ -16,7 +16,7 @@
 #' @param vjust Numeric. Vertical justification (0-1). Default: 0.5.
 #' @param check_overlap Logical. If TRUE, prevents overlapping labels. Default: TRUE.
 #' @param show.legend Logical. Include in legend? Default: FALSE.
-#' @param data Optional sf object. If NULL, uses mw_level_2.
+#' @param data Optional sf object. If NULL, uses mwmapdata::mw_level_2.
 #' @param label_column Character. Column name containing labels. Default: "ADM2_EN".
 #' @param ... Additional arguments passed to [ggplot2::geom_sf_text()].
 #'
@@ -35,7 +35,7 @@
 #'
 #' # Labels for specific districts only
 #' library(dplyr)
-#' selected_districts <- mw_level_2 %>%
+#' selected_districts <- mwmapdata::mw_level_2 %>%
 #'   filter(ADM2_EN %in% c("Lilongwe", "Blantyre", "Mzuzu City"))
 #'
 #' mw_map() +
@@ -61,14 +61,15 @@ mw_labels <- function(
   label_column = "ADM2_EN",
   ...
 ) {
+
   # Use default data if not provided
   if (is.null(data)) {
-    data <- mw_level_2
+    data <- mwmapdata::mw_level_2
   }
 
   # Use selected districts if available
   if (!is.null(districts)) {
-    data <- mw_level_2[mw_level_2$ADM2_EN %in% districts, ]
+    data <- mwmapdata::mw_level_2[mwmapdata::mw_level_2$ADM2_EN %in% districts, ]
   }
 
   # Validate label column exists
@@ -143,7 +144,7 @@ mw_label_repel <- function(
 
   # Default data if not provided
   if (is.null(args$data)) {
-    args$data <- mw_level_2
+    args$data <- mwmapdata::mw_level_2
   }
 
   # Calculate centroids

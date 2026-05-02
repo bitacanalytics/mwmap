@@ -2,16 +2,16 @@
 % Please edit documentation in R/mw_districts.R
 \name{mw_districts_simple}
 \alias{mw_districts_simple}
-\title{Simple version that always works}
+\title{Simple District Name Helper}
 \usage{
 mw_districts_simple(region = NULL)
 }
 \arguments{
-\item{region}{Optional region filter}
+\item{region}{Optional region filter.}
 }
 \value{
-Character vector of district names
+Character vector of district names.
 }
 \description{
-Simple version that always works
+Backwards-compatible alias for \code{\link[=mw_districts]{mw_districts()}}.
 }

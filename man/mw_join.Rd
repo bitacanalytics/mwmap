@@ -2,86 +2,79 @@
 % Please edit documentation in R/mw_join.R
 \name{mw_join}
 \alias{mw_join}
-\title{Join User Data to Malawi Map Geometry}
+\title{Join Data to Malawi Boundaries}
 \usage{
 mw_join(
   data,
-  district_col = "district",
-  map = mw_level_2,
-  by = NULL,
-  name_clean = mw_clean_names,
-  map_district_col = "ADM2_EN",
+  unit_col,
+  level = 2,
+  map = NULL,
+  map_col = NULL,
   keep_all = TRUE,
-  verbose = TRUE,
+  unmatched = c("message", "warning", "error", "ignore"),
   quiet = FALSE,
+  district_col = NULL,
+  name_clean = NULL,
+  by = NULL,
+  verbose = NULL,
   ...
 )
 }
 \arguments{
-\item{data}{Data frame containing district-level data to join.}
+\item{data}{A data frame containing values to map.}
 
-\item{district_col}{Character. Name of the column in \code{data} containing
-district names. Default: "district".}
+\item{unit_col}{Column in \code{data} containing the administrative unit names.
+May be quoted or unquoted. Defaults to \code{country}, \code{region}, \code{district}, or
+\code{ta} depending on \code{level}.}
 
-\item{map}{sf object. The map data to join with. Default: mw_level_2.}
+\item{level}{Administrative level: \code{0}/\code{"country"}, \code{1}/\code{"region"},
+\code{2}/\code{"district"}, or \code{3}/\code{"ta"}.}
 
-\item{by}{Character. Optional custom join column(s). If NULL, automatically
-matches based on district names. Default: NULL.}
+\item{map}{Optional sf object to join to. Defaults to the corresponding
+object from \pkg{mwmapdata}.}
 
-\item{name_clean}{Function. Function to clean/standardize district names.
-Default: \code{\link[=mw_clean_names]{mw_clean_names()}} (converts to title case, trims spaces).}
+\item{map_col}{Column in \code{map} containing administrative unit names. Defaults
+to the correct ADM column for \code{level}.}
 
-\item{map_district_col}{Character. Column name in map containing district
-names. Default: "ADM2_EN" (for level 2).}
+\item{keep_all}{If \code{TRUE}, keep all map features and attach matching values.
+If \code{FALSE}, keep only matched features.}
 
-\item{keep_all}{Logical. Keep all map rows (left join) or only matched rows
-(inner join)? Default: TRUE (left join).}
+\item{unmatched}{One of \code{"message"}, \code{"warning"}, \code{"error"}, or \code{"ignore"}.
+Controls how unmatched input names are reported.}
 
-\item{verbose}{Logical. Print detailed matching report. Default: TRUE.}
+\item{quiet}{Suppress matching messages.}
 
-\item{quiet}{Logical. Suppress all messages. Overrides verbose. Default: FALSE.}
+\item{district_col}{Deprecated alias for \code{unit_col}.}
 
-\item{...}{Additional arguments passed to \code{\link[=merge]{merge()}} or \code{\link[dplyr:mutate-joins]{dplyr::left_join()}}.}
+\item{name_clean}{Deprecated. Name matching now uses mwmap's internal
+normalisation.}
+
+\item{by}{Optional explicit join specification passed to dplyr joins.}
+
+\item{verbose}{Deprecated alias for \code{!quiet}.}
+
+\item{...}{Passed to dplyr joins.}
 }
 \value{
-An sf object with the map geometry and joined data attributes.
+An sf object with user columns joined to Malawi geometries.
 }
 \description{
-Merges user-provided district-level data with Malawi spatial data frames.
-Handles name matching, case normalization, and provides detailed feedback
-on matching success.
+Join a regular data frame to Malawi administrative boundary geometries. The
+function is level-aware, so the default join key changes automatically for
+country, region, district, and Traditional Authority maps.
 }
 \examples{
 \donttest{
-# Basic join
-df <- data.frame(
-  district = c("Lilongwe", "Blantyre", "Mzimba"),
-  cases = c(120, 200, 85)
+district_data <- data.frame(
+  district = c("Lilongwe", "Blantyre", "Mzuzu"),
+  cases = c(120, 80, 35)
 )
+mw_join(district_data)
 
-joined <- mw_join(df)
-
-# Join with custom district column
-df2 <- data.frame(
-  District_Name = c("Lilongwe", "Blantyre"),
-  population = c(2300000, 1800000)
-)
-
-joined2 <- mw_join(df2, district_col = "District_Name")
-
-# Join with Traditional Authorities level
 ta_data <- data.frame(
-  ta = c("Chitipa", "Mwaulambia", "Mabuka"),
-  value = c(45, 67, 89)
+  ta = c("Mabuka", "Mwaulambia"),
+  coverage = c(72, 64)
 )
-
-joined3 <- mw_join(ta_data, 
-                   district_col = "ta", 
-                   map = mw_level_3,
-                   map_district_col = "ADM3_EN")
-
-# Get matching report without creating object
-mw_join(df, verbose = TRUE)
+mw_join(ta_data, level = "ta")
 }
-
 }

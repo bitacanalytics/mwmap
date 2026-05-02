@@ -44,7 +44,7 @@ Use NA for transparent fill.}
 
 \item{label_fontface}{Label font style. Default: "bold".}
 
-\item{data}{Optional sf object. If NULL, uses mw_level_2.}
+\item{data}{Optional sf object. If NULL, uses mwmapdata::mw_level_2.}
 
 \item{district_col}{Column containing district names. Default: "ADM2_EN".}
 
@@ -64,20 +64,20 @@ border, or label styles. Useful for drawing attention to areas of interest.
 library(ggplot2)
 
 # Basic highlighting
-mw_map() + 
+mw_map() +
   mw_highlight("Lilongwe")
 
 # Multiple districts with custom styling
-mw_map() + 
+mw_map() +
   mw_highlight(c("Lilongwe", "Blantyre", "Mzuzu City"),
                fill = "gold", color = "darkred", alpha = 0.5)
 
 # Outline only (for emphasis without obscuring)
-mw_map(fill_color = "lightgrey") + 
+mw_map(fill_color = "lightgrey") +
   mw_highlight("Mzimba", outline_only = TRUE, size = 1.2)
 
 # With labels
-mw_map() + 
+mw_map() +
   mw_highlight("Zomba", label = TRUE, label_size = 5)
 }
 

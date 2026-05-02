@@ -2,100 +2,68 @@
 % Please edit documentation in R/mw_ta_map.R
 \name{mw_ta_map}
 \alias{mw_ta_map}
-\title{Plot Traditional Authorities Map}
+\title{Create a Traditional Authority Map}
 \usage{
 mw_ta_map(
-  districts = NULL,
-  fill = "white",
-  border_color = "black",
-  border_size = 0.2,
-  district_border = TRUE,
-  district_border_color = "red",
-  district_border_size = 0.5,
-  alpha = 1,
-  labels = FALSE,
-  label_size = 2,
-  label_color = "black",
-  max_labels = 50,
-  lakes = FALSE,
-  projection = "EPSG:4326",
-  title = NULL,
   data = NULL,
-  fill_column = NULL,
+  fill,
+  ta_col,
+  districts = NULL,
+  region = NULL,
+  tas = NULL,
+  palette = NULL,
+  labels = FALSE,
+  title = NULL,
+  subtitle = NULL,
+  caption = NULL,
+  district_borders = TRUE,
   ...
 )
 }
 \arguments{
-\item{districts}{Optional vector of district names to filter TAs.
-If NULL, shows all TAs. Default: NULL.}
+\item{data}{Optional data frame with TA-level values.}
 
-\item{fill}{Fill colour for TAs. Can be a single color or a column name
-for choropleth mapping. Default: "white".}
+\item{fill}{Optional column to map to fill colour. May be quoted or unquoted.}
 
-\item{border_color}{Border colour. Default: "black".}
+\item{ta_col}{Column in \code{data} containing TA names. Defaults to \code{ta}.}
 
-\item{border_size}{Border line width. Default: 0.2.}
+\item{districts}{Optional district filter.}
 
-\item{district_border}{Logical. Show district borders? Default: TRUE.}
+\item{region}{Optional region filter.}
 
-\item{district_border_color}{Color for district borders. Default: "red".}
+\item{tas}{Optional TA filter.}
 
-\item{district_border_size}{Size for district borders. Default: 0.5.}
+\item{palette}{Malawi palette name, colour vector, or palette function.}
 
-\item{alpha}{Fill transparency. Default: 1.}
+\item{labels}{Add TA labels.}
 
-\item{labels}{Logical. Add TA labels. Default: FALSE.}
+\item{title, subtitle, caption}{Plot labels.}
 
-\item{label_size}{Size of TA labels. Default: 2.}
+\item{district_borders}{Add district outlines.}
 
-\item{label_color}{Color of TA labels. Default: "black".}
-
-\item{max_labels}{Maximum number of labels to show (to avoid overcrowding).
-Default: 50.}
-
-\item{lakes}{Show major lakes. Default: TRUE.}
-
-\item{projection}{Map projection. Default: "EPSG:4326".}
-
-\item{title}{Map title. Default: NULL.}
-
-\item{data}{Optional dataset joined with TA map.}
-
-\item{fill_column}{Column name in \code{data} used for fill colour.}
-
-\item{...}{Additional arguments passed to \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}}.}
+\item{...}{Passed to \code{\link[=mw_map]{mw_map()}}.}
 }
 \value{
 A ggplot2 object.
 }
 \description{
-Create a detailed map of Malawi's Traditional Authorities (TA level).
-This is the third administrative level, showing subdivisions within districts.
+Map Malawi Traditional Authorities. This wrapper is optimised for TA-level
+work and supports numeric or categorical fills by TA name.
 }
 \examples{
 \donttest{
-# All TAs
-mw_ta_map()
+mw_ta_map(districts = "Lilongwe")
 
-# TAs in specific districts
-mw_ta_map(districts = c("Lilongwe", "Dowa"))
-
-# Custom styling
-mw_ta_map(border_color = "grey50", 
-          district_border_color = "blue",
-          district_border_size = 1)
-
-# With labels (first 30 TAs only)
-mw_ta_map(labels = TRUE, max_labels = 30)
-
-# Thematic map with data
-\dontrun{
 ta_data <- data.frame(
-  ta_name = c("Chitipa", "Mwaulambia", "Mabuka"),
-  population = c(45000, 32000, 28000)
+  ta = c("Mabuka", "Mwaulambia"),
+  coverage = c(72, 64)
 )
-mw_ta_map(data = ta_data, fill_column = "population")
-}
-}
+mw_ta_map(ta_data, fill = coverage, districts = "Mulanje")
 
+ta_status <- data.frame(
+  ta = c("Mabuka", "Mwaulambia"),
+  status = c("On track", "Needs support")
+)
+mw_ta_map(ta_status, fill = status)
+}
 }

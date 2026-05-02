@@ -162,6 +162,8 @@ scale_fill_mw <- function(
   direction = 1,
   ...
 ) {
+
+
   # Get palette
   pal <- malawi_palettes[[palette]]
 

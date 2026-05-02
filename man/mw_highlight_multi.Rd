@@ -20,9 +20,9 @@ Highlights different districts with potentially different colors.
 }
 \examples{
 \donttest{
-mw_map() + 
-  mw_highlight_multi(c("Lilongwe" = "gold", 
-                       "Blantyre" = "steelblue", 
+mw_map() +
+  mw_highlight_multi(c("Lilongwe" = "gold",
+                       "Blantyre" = "steelblue",
                        "Mzimba" = "forestgreen"))
 }
 

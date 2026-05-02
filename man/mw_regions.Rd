@@ -2,78 +2,48 @@
 % Please edit documentation in R/mw_regions.R
 \name{mw_regions}
 \alias{mw_regions}
-\title{Plot Malawi Regions Map}
+\title{Create a Malawi Regions Map}
 \usage{
 mw_regions(
-  fill = "white",
-  border_color = "black",
-  border_size = 0.5,
-  alpha = 1,
+  data = NULL,
+  fill,
+  region_col,
+  palette = "regions",
   labels = FALSE,
-  label_size = 4,
-  label_color = "black",
-  label_face = "bold",
-  region_colors = NULL,
-  lakes = FALSE,
-  projection = "EPSG:4326",
   title = NULL,
+  subtitle = NULL,
+  caption = NULL,
   ...
 )
 }
 \arguments{
-\item{fill}{Fill colour for regions. Can be a single color or a vector of
-3 colors (one per region). Default: "white".}
+\item{data}{Optional region-level data.}
 
-\item{border_color}{Border colour. Default: "black".}
+\item{fill}{Optional fill column. May be quoted or unquoted.}
 
-\item{border_size}{Border line width. Default: 0.5.}
+\item{region_col}{Region-name column in \code{data}. Defaults to \code{region}.}
 
-\item{alpha}{Fill transparency (0-1). Default: 1.}
+\item{palette}{Malawi palette name, colour vector, or palette function.}
 
-\item{labels}{Logical. Add region labels. Default: FALSE.}
+\item{labels}{Add region labels.}
 
-\item{label_size}{Size of region labels. Default: 4.}
+\item{title, subtitle, caption}{Plot labels.}
 
-\item{label_color}{Color of region labels. Default: "black".}
-
-\item{label_face}{Font face for labels. Default: "bold".}
-
-\item{region_colors}{Named vector of colors for specific regions.
-Names should be "Northern", "Central", "Southern". Default: NULL.}
-
-\item{lakes}{Show major lakes. Default: TRUE.}
-
-\item{projection}{Map projection. Default: "EPSG:4326".}
-
-\item{title}{Map title. Default: NULL.}
-
-\item{...}{Additional arguments passed to \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}}.}
+\item{...}{Passed to \code{\link[=mw_map]{mw_map()}}.}
 }
 \value{
 A ggplot2 object.
 }
 \description{
-Create a simplified map showing Malawi's three administrative regions:
-Northern, Central, and Southern. Useful for regional overview visualizations.
+Draw Malawi's three administrative regions with the same polished defaults
+used by \code{\link[=mw_map]{mw_map()}}.
 }
 \examples{
 \donttest{
-# Basic regions map
-mw_regions()
+mw_regions(labels = TRUE)
 
-# Colored regions
-mw_regions(fill = c("Northern" = "#E41A1C", 
-                    "Central" = "#377EB8", 
-                    "Southern" = "#4DAF4A"))
-
-# With labels
-mw_regions(labels = TRUE, label_size = 5)
-
-# Custom styling
-mw_regions(fill = "lightblue", 
-           border_color = "darkblue", 
-           border_size = 1,
-           alpha = 0.7)
+df <- data.frame(region = c("Northern", "Central", "Southern"),
+                 value = c(1, 2, 3))
+mw_regions(df, fill = value)
 }
-
 }

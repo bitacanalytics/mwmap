@@ -46,7 +46,7 @@ labels all districts. Default: NULL.}
 
 \item{show.legend}{Logical. Include in legend? Default: FALSE.}
 
-\item{data}{Optional sf object. If NULL, uses mw_level_2.}
+\item{data}{Optional sf object. If NULL, uses mwmapdata::mw_level_2.}
 
 \item{label_column}{Character. Column name containing labels. Default: "ADM2_EN".}
 
@@ -72,7 +72,7 @@ mw_map() +
 
 # Labels for specific districts only
 library(dplyr)
-selected_districts <- mw_level_2 \%>\%
+selected_districts <- mwmapdata::mw_level_2 \%>\%
   filter(ADM2_EN \%in\% c("Lilongwe", "Blantyre", "Mzuzu City"))
 
 mw_map() +

@@ -42,13 +42,13 @@
 #' @examples
 #' \donttest{
 #' library(ggplot2)
-#' 
+#'
 #' # Basic layout
-#' mw_map() + 
+#' mw_map() +
 #'   mw_layout("Malawi Health Districts")
-#' 
+#'
 #' # Full layout with all elements
-#' mw_map(fill = "population") + 
+#' mw_map(fill = "population") +
 #'   mw_layout(
 #'     title = "Population Distribution in Malawi",
 #'     subtitle = "Data from 2023 Census",
@@ -58,16 +58,16 @@
 #'     panel_border = TRUE,
 #'     grid_major = TRUE
 #'   )
-#' 
+#'
 #' # Minimal layout
-#' mw_map() + 
+#' mw_map() +
 #'   mw_layout(
 #'     theme = "minimal",
 #'     legend_position = "none"
 #'   )
-#' 
+#'
 #' # Custom colors
-#' mw_map() + 
+#' mw_map() +
 #'   mw_layout(
 #'     title = "Malawi Map",
 #'     background_color = "#f5f5f5",
@@ -111,23 +111,24 @@ mw_layout <- function(
   axis_ticks = FALSE,
   ...
 ) {
-  
+
+
   # Match theme argument
   theme <- match.arg(theme)
-  
+
   # Create labs object
   labs_obj <- ggplot2::labs(
     title = title,
     subtitle = subtitle,
     caption = caption
   )
-  
+
   # Modify legend title if specified
   if (!is.null(legend_title)) {
     labs_obj$fill <- legend_title
     labs_obj$color <- legend_title
   }
-  
+
   # Base theme based on selection
   if (theme == "void") {
     base_theme <- ggplot2::theme_void()
@@ -138,7 +139,7 @@ mw_layout <- function(
   } else {
     base_theme <- ggplot2::theme()
   }
-  
+
   # Custom theme elements
   theme_custom <- ggplot2::theme(
     # Plot appearance
@@ -147,7 +148,7 @@ mw_layout <- function(
       color = NA
     ),
     plot.margin = margin,
-    
+
     # Title appearance
     plot.title = ggplot2::element_text(
       size = title_size,
@@ -171,7 +172,7 @@ mw_layout <- function(
       hjust = 1,
       margin = ggplot2::margin(t = 5)
     ),
-    
+
     # Legend appearance
     legend.position = legend_position,
     legend.direction = legend_direction,
@@ -194,13 +195,13 @@ mw_layout <- function(
       fill = "transparent",
       color = NA
     ),
-    
+
     # Panel appearance
     panel.background = ggplot2::element_rect(
       fill = "transparent",
       color = NA
     ),
-    
+
     # Grid lines
     panel.grid.major = if (grid_major) {
       ggplot2::element_line(color = grid_color, linewidth = 0.2)
@@ -212,7 +213,7 @@ mw_layout <- function(
     } else {
       ggplot2::element_blank()
     },
-    
+
     # Axis appearance
     axis.text = if (axis_text) {
       ggplot2::element_text(
@@ -230,7 +231,7 @@ mw_layout <- function(
     },
     axis.title = ggplot2::element_blank()
   )
-  
+
   # Add panel border if requested
   if (panel_border) {
     theme_custom <- theme_custom +
@@ -242,11 +243,11 @@ mw_layout <- function(
         )
       )
   }
-  
+
   # Combine with any additional theme elements
-  theme_custom <- theme_custom + 
+  theme_custom <- theme_custom +
     ggplot2::theme(...)
-  
+
   # Return combined layout elements
   structure(
     list(

@@ -111,11 +111,11 @@ to Malawi maps. Provides a consistent look and feel across visualizations.
 library(ggplot2)
 
 # Basic layout
-mw_map() + 
+mw_map() +
   mw_layout("Malawi Health Districts")
 
 # Full layout with all elements
-mw_map(fill = "population") + 
+mw_map(fill = "population") +
   mw_layout(
     title = "Population Distribution in Malawi",
     subtitle = "Data from 2023 Census",
@@ -127,14 +127,14 @@ mw_map(fill = "population") +
   )
 
 # Minimal layout
-mw_map() + 
+mw_map() +
   mw_layout(
     theme = "minimal",
     legend_position = "none"
   )
 
 # Custom colors
-mw_map() + 
+mw_map() +
   mw_layout(
     title = "Malawi Map",
     background_color = "#f5f5f5",

@@ -91,24 +91,24 @@ facilities <- data.frame(
 )
 
 # Basic points
-mw_map() + 
+mw_map() +
   mw_points(facilities, lon, lat)
 
 # Colored by type (pass column name as a string)
-mw_map() + 
+mw_map() +
   mw_points(facilities, lon, lat, color = "type")
 
 # Sized by beds (pass column name as a string)
-mw_map() + 
+mw_map() +
   mw_points(facilities, lon, lat, size = "beds", alpha = 0.7)
 
 # With labels
-mw_map() + 
+mw_map() +
   mw_points(facilities, lon, lat,
             label = TRUE, label_column = "name")
 
 # Custom styling
-mw_map() + 
+mw_map() +
   mw_points(facilities, lon, lat,
             color = "darkblue", shape = 16, size = 4, alpha = 0.6)
 }

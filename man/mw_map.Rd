@@ -2,152 +2,161 @@
 % Please edit documentation in R/mw_map.R
 \name{mw_map}
 \alias{mw_map}
-\title{Plot Malawi Map (Professional Edition)}
+\title{Create a Professional Malawi Map}
 \usage{
 mw_map(
   data = NULL,
-  fill = NULL,
-  districts = NULL,
-  region = NULL,
+  fill,
+  unit_col,
   level = 2,
-  lakes = FALSE,
-  borders = TRUE,
-  border_color = "#333333",
-  border_size = 0.3,
-  lake_color = "#9ecae1",
-  lake_border_color = "#3182bd",
+  region = NULL,
+  districts = NULL,
+  tas = NULL,
+  palette = NULL,
+  scale_type = c("auto", "continuous", "discrete"),
+  reverse = FALSE,
+  na_color = "#D7DCE2",
+  fill_color = "#F2F4F3",
+  border_color = "#252222",
+  border_size = 0.25,
   alpha = 1,
+  lakes = FALSE,
+  lake_color = "#A7D8F0",
+  lake_border_color = "#5D9BC2",
+  district_borders = NULL,
+  district_border_color = "#2F3437",
+  district_border_size = 0.45,
+  highlight_districts = NULL,
+  highlight_tas = NULL,
+  highlight_color = "#D7263D",
+  highlight_size = 1,
+  labels = FALSE,
+  label_column = NULL,
+  label_size = NULL,
+  label_color = "#222222",
+  label_repel = FALSE,
   title = NULL,
   subtitle = NULL,
   caption = NULL,
-  fill_color = "#f0f0f0",
-  fill_palette = NULL,
-  fill_scale_type = "auto",
-  fill_breaks = waiver(),
-  fill_labels = waiver(),
-  fill_limits = NULL,
-  fill_na = "#bdbdbd",
   legend_title = NULL,
   legend_position = "right",
   projection = "EPSG:4326",
-  grid = FALSE,
-  grid_lines = TRUE,
-  grid_labels = TRUE,
   scale_bar = FALSE,
-  scale_bar_position = "bottomright",
   north_arrow = FALSE,
-  north_arrow_position = "topright",
   interactive = FALSE,
-  highlight_districts = NULL,
-  highlight_border_color = "#E41A1C",
-  highlight_border_size = 1.2,
-  highlight_fill = NA,
-  label_districts = FALSE,
-  label_column = NULL,
-  label_size = 3,
-  label_color = "#333333",
-  label_repel = FALSE,
-  theme = NULL,
   quiet = FALSE,
   ...
 )
 }
 \arguments{
-\item{data}{Optional dataset joined with the map. Can be a data.frame, sf object, or tibble.}
+\item{data}{Optional data frame or sf object. If a data frame is supplied it
+is joined to the selected Malawi boundaries.}
 
-\item{fill}{Column name in \code{data} used for fill colour.}
+\item{fill}{Optional column to map to fill colour. May be quoted or unquoted.}
 
-\item{districts}{Optional vector of district names to plot (case-insensitive).}
+\item{unit_col}{Column in \code{data} containing names to join by. May be quoted
+or unquoted. Defaults to \code{country}, \code{region}, \code{district}, or \code{ta},
+depending on \code{level}.}
 
-\item{region}{Optional region name to filter districts: "Northern", "Central", "Southern" (or shortcuts "n", "c", "s").}
+\item{level}{Administrative level: \code{0}/\code{"country"}, \code{1}/\code{"region"},
+\code{2}/\code{"district"}, or \code{3}/\code{"ta"}.}
 
-\item{level}{Administrative level: 0 = country, 1 = regions, 2 = districts (default), 3 = traditional authorities.}
+\item{region}{Optional region filter.}
 
-\item{lakes}{Show major lakes. Default: TRUE.}
+\item{districts}{Optional district filter. For \code{level = "ta"}, this maps TAs
+only inside the selected districts.}
 
-\item{borders}{Show administrative borders. Default: TRUE.}
+\item{tas}{Optional Traditional Authority filter.}
 
-\item{border_color}{Border colour for main administrative units. Default: "#333333".}
+\item{palette}{Name of a Malawi palette, a vector of colours, or a palette
+function. Defaults to \code{"health"} for numeric data and \code{"qualitative_2"} for
+categorical data.}
 
-\item{border_size}{Border line width. Default: 0.3.}
+\item{scale_type}{\code{"auto"}, \code{"continuous"}, or \code{"discrete"}.}
 
-\item{lake_color}{Fill colour for lakes. Default: "#9ecae1".}
+\item{reverse}{Reverse the fill palette.}
 
-\item{lake_border_color}{Border colour for lakes. Default: "#3182bd".}
+\item{na_color}{Fill colour for missing values.}
 
-\item{alpha}{Fill transparency (0-1). Default: 1.}
+\item{fill_color}{Fill colour used when \code{fill} is not supplied.}
 
-\item{title}{Map title. Default: NULL.}
+\item{border_color}{Boundary colour.}
 
-\item{subtitle}{Map subtitle. Default: NULL.}
+\item{border_size}{Boundary line width.}
 
-\item{caption}{Map caption. Default: NULL.}
+\item{alpha}{Fill opacity.}
 
-\item{fill_color}{Default fill colour if \code{fill} is NULL. Default: "#f0f0f0".}
+\item{lakes}{Add Lake Malawi.}
 
-\item{fill_palette}{Colour palette for fill variable. Default: NULL.}
+\item{lake_color}{Lake fill colour.}
 
-\item{fill_scale_type}{Scale type: "continuous", "discrete", or "auto". Default: "auto".}
+\item{lake_border_color}{Lake border colour.}
 
-\item{fill_breaks}{Custom breaks for continuous fill. Default: waiver().}
+\item{district_borders}{Add district outlines on TA maps.}
 
-\item{fill_labels}{Custom labels for fill legend. Default: waiver().}
+\item{district_border_color}{District outline colour on TA maps.}
 
-\item{fill_limits}{Limits for continuous fill. Default: NULL.}
+\item{district_border_size}{District outline width on TA maps.}
 
-\item{fill_na}{Colour for NA values. Default: "#bdbdbd".}
+\item{highlight_districts}{Districts to outline.}
 
-\item{legend_title}{Title for fill legend. Defaults to \code{fill} parameter.}
+\item{highlight_tas}{Traditional Authorities to outline.}
 
-\item{legend_position}{Legend position: "right", "left", "top", "bottom", "none", or coordinates. Default: "right".}
+\item{highlight_color}{Highlight outline colour.}
 
-\item{projection}{Map projection. Default: "EPSG:4326".}
+\item{highlight_size}{Highlight outline width.}
 
-\item{grid}{Show coordinate grid. Default: FALSE.}
+\item{labels}{Add labels for mapped features.}
 
-\item{grid_lines}{Show grid lines (if \code{grid = TRUE}). Default: TRUE.}
+\item{label_column}{Optional label column. Defaults to the level name column.}
 
-\item{grid_labels}{Show grid labels (if \code{grid = TRUE}). Default: TRUE.}
+\item{label_size}{Label size.}
 
-\item{scale_bar}{Add scale bar. Default: FALSE.}
+\item{label_color}{Label colour.}
 
-\item{scale_bar_position}{Position of scale bar: "bottomright", "bottomleft", "topright", "topleft". Default: "bottomright".}
+\item{label_repel}{Use \pkg{ggrepel} for label placement if installed.}
 
-\item{north_arrow}{Add north arrow. Default: FALSE.}
+\item{title, subtitle, caption}{Plot labels.}
 
-\item{north_arrow_position}{Position of north arrow. Default: "topright".}
+\item{legend_title}{Legend title. Defaults to the fill column.}
 
-\item{interactive}{Return interactive plot (TRUE/FALSE) using plotly. Default: FALSE.}
+\item{legend_position}{Legend position.}
 
-\item{highlight_districts}{Vector of districts to highlight with different border. Default: NULL.}
+\item{projection}{Coordinate reference system.}
 
-\item{highlight_border_color}{Border colour for highlighted districts. Default: "#E41A1C".}
+\item{scale_bar}{Add a scale bar if \pkg{ggspatial} is installed.}
 
-\item{highlight_border_size}{Border size for highlighted districts. Default: 1.2.}
+\item{north_arrow}{Add a north arrow if \pkg{ggspatial} is installed.}
 
-\item{highlight_fill}{Fill colour for highlighted districts (NA for outline only). Default: NA.}
+\item{interactive}{Return a plotly object if \pkg{plotly} is installed.}
 
-\item{label_districts}{Show district labels. Default: FALSE.}
+\item{quiet}{Suppress join messages.}
 
-\item{label_column}{Column to use for labels. Default: "ADM2_EN" for level 2.}
-
-\item{label_size}{Size of district labels. Default: 3.}
-
-\item{label_color}{Colour of district labels. Default: "#333333".}
-
-\item{label_repel}{Use ggrepel to avoid overlapping labels. Default: FALSE.}
-
-\item{theme}{Custom ggplot2 theme (NULL for default). Default: NULL.}
-
-\item{quiet}{Suppress messages. Default: FALSE.}
-
-\item{...}{Additional arguments passed to ggplot2::geom_sf().}
+\item{...}{Additional arguments passed to \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}}.}
 }
 \value{
-A ggplot2 object (or plotly object if \code{interactive = TRUE}).
+A ggplot2 object, or a plotly object when \code{interactive = TRUE}.
 }
 \description{
-Main function for creating publication-ready Malawi maps with extensive
-customization options, including spatial visualization, custom projections,
-and professional cartographic elements.
+\code{mw_map()} is the main high-level plotting function in mwmap. It can draw
+Malawi boundaries at country, region, district, or Traditional Authority
+level, join your data by name, and choose an appropriate colour scale for
+numeric or categorical values.
+}
+\examples{
+\donttest{
+mw_map()
+
+df <- data.frame(
+  district = c("Lilongwe", "Blantyre", "Mzuzu"),
+  cases = c(120, 80, 35)
+)
+mw_map(df, fill = cases)
+
+ta_df <- data.frame(
+  ta = c("Mabuka", "Mwaulambia"),
+  coverage = c(72, 64)
+)
+mw_map(ta_df, fill = coverage, level = "ta", districts = "Mulanje")
+}
 }

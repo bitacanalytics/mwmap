@@ -2,23 +2,21 @@
 % Please edit documentation in R/mw_join.R
 \name{mw_clean_names}
 \alias{mw_clean_names}
-\title{Clean District Names for Matching}
+\title{Clean Malawi Administrative Names}
 \usage{
 mw_clean_names(x)
 }
 \arguments{
-\item{x}{Character vector of district names.}
+\item{x}{Character vector of names.}
 }
 \value{
-A cleaned character vector the same length as \code{x}.
+A character vector.
 }
 \description{
-Standardizes district names to improve matching success when joining
-user data to Malawi map geometries. Converts to title case, removes
-trailing "District" or "TA" suffixes, and normalises known shapefile
-name variants (e.g. "Nkhata Bay" -> "Nkhatabay", "Mzuzu" -> "Mzuzu City").
+Standardise names for display and backwards-compatible workflows. For joins,
+\code{mw_join()} uses a stricter internal key that is robust to punctuation, case,
+and common suffixes such as "District" and "TA".
 }
 \examples{
-mw_clean_names(c("lilongwe", "BLANTYRE district", "nkhata bay"))
-
+mw_clean_names(c("lilongwe district", "Nkhata Bay", "T/A Mabuka"))
 }
